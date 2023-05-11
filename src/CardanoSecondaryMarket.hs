@@ -74,8 +74,8 @@ import Ledger.Ada (lovelaceValueOf)
 -- Data Types
 -------------------------------------------------
 -- | Extra parameter for the spending script.
--- This creates a unique secondary market for every policy id. This assumes there is a unique
--- policy id for every NFT that can be resold on the secondary market. For example,
+-- This creates a unique set of secondary market beacons for every policy id. This assumes 
+-- there is a unique policy id for every NFT that can be resold on the secondary market. For example,
 -- an option contract for ADA/DJED will have a unique policy ID. This allows a user to see only
 -- the open orders for that specific financial item. This does not sub-divide markets by purchase
 -- asset. This market can be composed with cardano-swaps inputs so it is possible to use a different
@@ -183,7 +183,8 @@ isPaymentPubKeyCred _ = False
 -- | This validator is used to guarantee trustless sales of financial NFTs. Every user will
 -- get there own address instance for this validator. This ensures users maintain delegation control
 -- and custody of their assets at all times. The validator overloads the staking credential for
--- owner related actions.
+-- owner related actions. All sales, no matter what beacon policy is used, occur in addresses
+-- using this validator.
 -- 
 -- In order to prevent double satisfaction of payments, each payment output must be guaranteed
 -- to be unique. To this end, the following steps are taken:
@@ -305,9 +306,9 @@ marketValidatorHash = Scripts.validatorHash marketValidator
 -------------------------------------------------
 -- On-Chain Market Beacon Policy
 -------------------------------------------------
-mkMarketBeaconPolicy :: AppName -> ValidatorHash -- ^ Extra parameters
+mkMarketBeaconPolicy :: MarketConfig -> AppName -> ValidatorHash -- ^ Extra parameters
                      -> MarketBeaconRedeemer -> ScriptContext -> Bool
-mkMarketBeaconPolicy appName valHash r ctx@ScriptContext{scriptContextTxInfo = info} =
+mkMarketBeaconPolicy nftSym appName valHash r ctx@ScriptContext{scriptContextTxInfo = info} =
   case r of
     MintSaleBeacon ->
       -- | The following function checks:
@@ -321,9 +322,10 @@ mkMarketBeaconPolicy appName valHash r ctx@ScriptContext{scriptContextTxInfo = i
       --     b) The address must have a staking credential.
       -- 2) The Sale beacon must be stored with the proper inline MarketDatum:
       --     a) beaconSymbol == this policy id.
-      --     b) nftOnSale == nft stored in UTxO.
-      --     c) snd salePrice > 0
-      --     d) the payToAddress must use a payment pubkey.
+      --     b) fst nftOnSale == nftSym
+      --     c) nftOnSale == nft stored in UTxO.
+      --     d) snd salePrice > 0
+      --     e) the payToAddress must use a payment pubkey.
       -- 3) The Sale beacon must be stored with the proper value:
       --     1) 3 ADA <> nft <> Sale beacon
       --     2) No other assets
@@ -427,8 +429,9 @@ mkMarketBeaconPolicy appName valHash r ctx@ScriptContext{scriptContextTxInfo = i
 
     -- | This either returns True or fails with an error.
     validMarketDatum :: MarketDatum -> Bool
-    validMarketDatum (MarketDatum bs _ sp pa)
+    validMarketDatum (MarketDatum bs (nftS',_) sp pa)
       | bs /= beaconSym = traceError "Invalid MarketDatum beaconSymbol"
+      | nftS' /= nftSym = traceError "This NFT requires a different beacon policy"
       | snd sp <= 0 = traceError "Invalid MarketDatum salePrice"
       | not $ isPaymentPubKeyCred pa = traceError "Invalid MarketDatum payToAddress"
       | otherwise = True
@@ -469,19 +472,20 @@ mkMarketBeaconPolicy appName valHash r ctx@ScriptContext{scriptContextTxInfo = i
             else acc
       in foldl' foo True outputs
 
-marketBeaconPolicy :: MintingPolicy
-marketBeaconPolicy = Plutonomy.optimizeUPLC $ mkMintingPolicyScript
+marketBeaconPolicy :: MarketConfig -> MintingPolicy
+marketBeaconPolicy config = Plutonomy.optimizeUPLC $ mkMintingPolicyScript
   ($$(PlutusTx.compile [|| wrap ||])
+    `PlutusTx.applyCode` PlutusTx.liftCode config
     `PlutusTx.applyCode` PlutusTx.liftCode app
     `PlutusTx.applyCode` PlutusTx.liftCode marketValidatorHash)
   where
-    wrap x y = mkUntypedMintingPolicy $ mkMarketBeaconPolicy x y
+    wrap x y z = mkUntypedMintingPolicy $ mkMarketBeaconPolicy x y z
 
-marketBeaconPolicyScript :: Script
-marketBeaconPolicyScript = unMintingPolicyScript marketBeaconPolicy
+marketBeaconPolicyScript :: MarketConfig -> Script
+marketBeaconPolicyScript = unMintingPolicyScript . marketBeaconPolicy
 
-marketBeaconPolicySymbol :: CurrencySymbol
-marketBeaconPolicySymbol = scriptCurrencySymbol marketBeaconPolicy
+marketBeaconPolicySymbol :: MarketConfig -> CurrencySymbol
+marketBeaconPolicySymbol = scriptCurrencySymbol . marketBeaconPolicy
 
 -------------------------------------------------
 -- Serialization
