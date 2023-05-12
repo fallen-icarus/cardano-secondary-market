@@ -113,6 +113,238 @@ successfullyPurchaseSingleNFT = do
           ]
       }
 
+successfullyPurchaseMultipleNFTsUnderSamePolicy :: EmulatorTrace ()
+successfullyPurchaseMultipleNFTsUnderSamePolicy = do
+  h1 <- activateContractWallet (knownWallet 1) endpoints
+  h2 <- activateContractWallet (knownWallet 2) endpoints
+  h3 <- activateContractWallet (knownWallet 3) endpoints
+  h4 <- activateContractWallet (knownWallet 4) endpoints
+  h6 <- activateContractWallet (knownWallet 6) endpoints
+
+  let pAddr1 = Address (PubKeyCredential $ unPaymentPubKeyHash 
+                                         $ mockWalletPaymentPubKeyHash 
+                                         $ knownWallet 1)
+                        Nothing
+      pAddr2 = Address (PubKeyCredential $ unPaymentPubKeyHash 
+                                         $ mockWalletPaymentPubKeyHash 
+                                         $ knownWallet 2)
+                        Nothing
+      pAddr3 = Address (PubKeyCredential $ unPaymentPubKeyHash 
+                                         $ mockWalletPaymentPubKeyHash 
+                                         $ knownWallet 3)
+                        Nothing
+      pAddr4 = Address (PubKeyCredential $ unPaymentPubKeyHash 
+                                         $ mockWalletPaymentPubKeyHash 
+                                         $ knownWallet 4)
+                        Nothing
+      saleDatum1 = MarketDatum
+        { beaconSymbol = marketBeaconPolicySym1
+        , nftOnSale = testToken1
+        , salePrice = ((adaSymbol,adaToken),10_000_000)
+        , payToAddress = pAddr1
+        }
+      saleDatum2 = MarketDatum
+        { beaconSymbol = marketBeaconPolicySym1
+        , nftOnSale = testToken3
+        , salePrice = ((adaSymbol,adaToken),10_000_000)
+        , payToAddress = pAddr2
+        }
+      saleDatum3 = MarketDatum
+        { beaconSymbol = marketBeaconPolicySym1
+        , nftOnSale = testToken4
+        , salePrice = ((adaSymbol,adaToken),10_000_000)
+        , payToAddress = pAddr3
+        }
+      saleDatum4 = MarketDatum
+        { beaconSymbol = marketBeaconPolicySym1
+        , nftOnSale = testToken5
+        , salePrice = ((adaSymbol,adaToken),10_000_000)
+        , payToAddress = pAddr4
+        }
+      marketAddr1 = Address (ScriptCredential marketValidatorHash)
+                            (Just $ StakingHash
+                                  $ PubKeyCredential
+                                  $ unPaymentPubKeyHash
+                                  $ mockWalletPaymentPubKeyHash
+                                  $ knownWallet 1)
+      marketAddr2 = Address (ScriptCredential marketValidatorHash)
+                            (Just $ StakingHash
+                                  $ PubKeyCredential
+                                  $ unPaymentPubKeyHash
+                                  $ mockWalletPaymentPubKeyHash
+                                  $ knownWallet 2)
+      marketAddr3 = Address (ScriptCredential marketValidatorHash)
+                            (Just $ StakingHash
+                                  $ PubKeyCredential
+                                  $ unPaymentPubKeyHash
+                                  $ mockWalletPaymentPubKeyHash
+                                  $ knownWallet 3)
+      marketAddr4 = Address (ScriptCredential marketValidatorHash)
+                            (Just $ StakingHash
+                                  $ PubKeyCredential
+                                  $ unPaymentPubKeyHash
+                                  $ mockWalletPaymentPubKeyHash
+                                  $ knownWallet 4)
+    
+  callEndpoint @"create-sale" h1 $
+    CreateSaleParams
+      { createSaleBeaconsMinted = [("Sale",1)]
+      , createSaleBeaconRedeemer = MintSaleBeacon
+      , createSaleBeaconPolicy = marketBeaconPolicy1
+      , createSaleAddress = marketAddr1
+      , createSaleInfo = 
+          [ ( Just saleDatum1
+            , lovelaceValueOf 3_000_000 
+           <> singleton marketBeaconPolicySym1 "Sale" 1
+           <> (uncurry singleton testToken1) 1
+           )
+          ]
+      , createSaleAsInline = True
+      }
+
+  void $ waitUntilSlot 2
+
+  callEndpoint @"create-sale" h2 $
+    CreateSaleParams
+      { createSaleBeaconsMinted = [("Sale",1)]
+      , createSaleBeaconRedeemer = MintSaleBeacon
+      , createSaleBeaconPolicy = marketBeaconPolicy1
+      , createSaleAddress = marketAddr2
+      , createSaleInfo = 
+          [ ( Just saleDatum2
+            , lovelaceValueOf 3_000_000 
+           <> singleton marketBeaconPolicySym1 "Sale" 1
+           <> (uncurry singleton testToken3) 1
+           )
+          ]
+      , createSaleAsInline = True
+      }
+
+  void $ waitUntilSlot 4
+
+  callEndpoint @"create-sale" h3 $
+    CreateSaleParams
+      { createSaleBeaconsMinted = [("Sale",1)]
+      , createSaleBeaconRedeemer = MintSaleBeacon
+      , createSaleBeaconPolicy = marketBeaconPolicy1
+      , createSaleAddress = marketAddr3
+      , createSaleInfo = 
+          [ ( Just saleDatum3
+            , lovelaceValueOf 3_000_000 
+           <> singleton marketBeaconPolicySym1 "Sale" 1
+           <> (uncurry singleton testToken4) 1
+           )
+          ]
+      , createSaleAsInline = True
+      }
+
+  void $ waitUntilSlot 6
+
+  callEndpoint @"create-sale" h4 $
+    CreateSaleParams
+      { createSaleBeaconsMinted = [("Sale",1)]
+      , createSaleBeaconRedeemer = MintSaleBeacon
+      , createSaleBeaconPolicy = marketBeaconPolicy1
+      , createSaleAddress = marketAddr4
+      , createSaleInfo = 
+          [ ( Just saleDatum4
+            , lovelaceValueOf 3_000_000 
+           <> singleton marketBeaconPolicySym1 "Sale" 1
+           <> (uncurry singleton testToken5) 1
+           )
+          ]
+      , createSaleAsInline = True
+      }
+
+  void $ waitUntilSlot 8
+  
+  saleHash1 <- txIdWithValue ( lovelaceValueOf 3_000_000 
+                            <> singleton marketBeaconPolicySym1 "Sale" 1
+                            <> (uncurry singleton testToken1) 1
+                             )
+  saleHash2 <- txIdWithValue ( lovelaceValueOf 3_000_000 
+                            <> singleton marketBeaconPolicySym1 "Sale" 1
+                            <> (uncurry singleton testToken3) 1
+                             )
+  saleHash3 <- txIdWithValue ( lovelaceValueOf 3_000_000 
+                            <> singleton marketBeaconPolicySym1 "Sale" 1
+                            <> (uncurry singleton testToken4) 1
+                             )
+  saleHash4 <- txIdWithValue ( lovelaceValueOf 3_000_000 
+                            <> singleton marketBeaconPolicySym1 "Sale" 1
+                            <> (uncurry singleton testToken5) 1
+                             )
+
+  let receiptToken1 = txIdAsToken saleHash1
+      receiptToken2 = txIdAsToken saleHash2
+      receiptToken3 = txIdAsToken saleHash3
+      receiptToken4 = txIdAsToken saleHash4
+
+  callEndpoint @"purchase" h6 $
+    PurchaseParams
+      { purchaseBeaconsMinted = 
+          [ [ ("Sale",-4)
+            , (receiptToken1,1)
+            , (receiptToken2,1)
+            , (receiptToken3,1)
+            , (receiptToken4,1)
+            ]
+          ]
+      , purchaseBeaconRedeemer = [MintReceiptTokens]
+      , purchaseBeaconPolicies = [marketBeaconPolicy1]
+      , purchaseVal = marketValidator
+      , purchaseAddresses = [marketAddr1,marketAddr2,marketAddr3,marketAddr4]
+      , purchaseSpecificUTxOs = 
+          [ [ ( saleDatum1
+              , lovelaceValueOf 3_000_000 
+             <> singleton marketBeaconPolicySym1 "Sale" 1
+             <> (uncurry singleton testToken1) 1
+              )
+            ]
+          , [ ( saleDatum2
+              , lovelaceValueOf 3_000_000 
+             <> singleton marketBeaconPolicySym1 "Sale" 1
+             <> (uncurry singleton testToken3) 1
+              )
+            ]
+          , [ ( saleDatum3
+              , lovelaceValueOf 3_000_000 
+             <> singleton marketBeaconPolicySym1 "Sale" 1
+             <> (uncurry singleton testToken4) 1
+              )
+            ]
+          , [ ( saleDatum4
+              , lovelaceValueOf 3_000_000 
+             <> singleton marketBeaconPolicySym1 "Sale" 1
+             <> (uncurry singleton testToken5) 1
+              )
+            ]
+          ]
+      , purchasePaymentAddresses = [pAddr1,pAddr2,pAddr3,pAddr4]
+      , purchasePaymentOutputs = 
+          [ [ ( Nothing
+              , lovelaceValueOf 13_000_000
+             <> singleton marketBeaconPolicySym1 receiptToken1 1
+              )
+            ]
+          , [ ( Nothing
+              , lovelaceValueOf 13_000_000
+             <> singleton marketBeaconPolicySym1 receiptToken2 1
+              )
+            ]
+          , [ ( Nothing
+              , lovelaceValueOf 13_000_000
+             <> singleton marketBeaconPolicySym1 receiptToken3 1
+              )
+            ]
+          , [ ( Nothing
+              , lovelaceValueOf 13_000_000
+             <> singleton marketBeaconPolicySym1 receiptToken4 1
+              )
+            ]
+          ]
+      }
+
 -------------------------------------------------
 -- Test Function
 -------------------------------------------------
@@ -124,4 +356,4 @@ tests = do
     ]
 
 testTrace :: IO ()
-testTrace = runEmulatorTraceIO' def emConfig successfullyPurchaseSingleNFT
+testTrace = runEmulatorTraceIO' def benchConfig successfullyPurchaseMultipleNFTsUnderSamePolicy

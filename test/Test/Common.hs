@@ -37,7 +37,7 @@ import Ledger.Ada (lovelaceValueOf)
 import Plutus.Script.Utils.V2.Scripts as UScripts
 import Plutus.Trace
 import Wallet.Emulator.Wallet
-import Data.List (foldl',repeat,zipWith3)
+import Data.List (foldl',zipWith3)
 import Prelude as Haskell (Semigroup (..), String)
 import Cardano.Api.Shelley (ExecutionUnits (..),ProtocolParameters (..))
 import Ledger.Tx.Internal as I
@@ -99,9 +99,31 @@ data PurchaseParams = PurchaseParams
   , purchasePaymentOutputs :: [[(Maybe MarketDatum,Value)]]
   } deriving (Generic,ToJSON,FromJSON)
 
+data CloseSaleParams = CloseSaleParams
+  { closeSaleBeaconsBurned :: [[(TokenName,Integer)]]
+  , closeSaleBeaconRedeemer :: [MarketBeaconRedeemer]
+  , closeSaleBeaconPolicies :: [MintingPolicy]
+  , closeSaleMarketVal :: Validator
+  , closeSaleMarketAddress :: Address
+  , closeSaleSpecificUTxOs :: [(MarketDatum,Value)]
+  } deriving (Generic,ToJSON,FromJSON)
+
+data UpdateParams = UpdateParams
+  { updateBeaconsMinted :: [[(TokenName,Integer)]]
+  , updateBeaconRedeemer :: [MarketBeaconRedeemer]
+  , updateBeaconPolicies :: [MintingPolicy]
+  , updateVal :: Validator
+  , updateAddresses :: [Address]
+  , updateSpecificUTxOs :: [[(MarketDatum,Value)]]
+  , updatePaymentAddresses :: [Address]
+  , updatePaymentOutputs :: [[(Maybe MarketDatum,Value)]]
+  } deriving (Generic,ToJSON,FromJSON)
+
 type TraceSchema =
       Endpoint "create-sale" CreateSaleParams
+  .\/ Endpoint "close-sale" CloseSaleParams
   .\/ Endpoint "purchase" PurchaseParams
+  .\/ Endpoint "update" UpdateParams
 
 -------------------------------------------------
 -- Configs
@@ -118,6 +140,42 @@ testToken3 = ("c0f8644a01a6bf5db02f4afe30d604975e63dd274f1098a1738e561d","TestTo
 testToken4 :: (CurrencySymbol,TokenName)
 testToken4 = ("c0f8644a01a6bf5db02f4afe30d604975e63dd274f1098a1738e561d","TestToken4")
 
+testToken5 :: (CurrencySymbol,TokenName)
+testToken5 = ("c0f8644a01a6bf5db02f4afe30d604975e63dd274f1098a1738e561d","TestToken5")
+
+testToken6 :: (CurrencySymbol,TokenName)
+testToken6 = ("c0f8644a01a6bf5db02f4afe30d604975e63dd274f1098a1738e561d","TestToken6")
+
+testToken7 :: (CurrencySymbol,TokenName)
+testToken7 = ("c0f8644a01a6bf5db02f4afe30d604975e63dd274f1098a1738e561d","TestToken7")
+
+testToken8 :: (CurrencySymbol,TokenName)
+testToken8 = ("c0f8644a01a6bf5db02f4afe30d604975e63dd274f1098a1738e561d","TestToken8")
+
+otherToken1 :: (CurrencySymbol,TokenName)
+otherToken1 = ("7a922050dc48ec0914a3e1c74aad5056de536e7f7cef71f1581a294d","OtherToken1")
+
+otherToken2 :: (CurrencySymbol,TokenName)
+otherToken2 = ("7a922050dc48ec0914a3e1c74aad5056de536e7f7cef71f1581a294d","OtherToken2")
+
+otherToken3 :: (CurrencySymbol,TokenName)
+otherToken3 = ("7a922050dc48ec0914a3e1c74aad5056de536e7f7cef71f1581a294d","OtherToken3")
+
+otherToken4 :: (CurrencySymbol,TokenName)
+otherToken4 = ("7a922050dc48ec0914a3e1c74aad5056de536e7f7cef71f1581a294d","OtherToken4")
+
+otherToken5 :: (CurrencySymbol,TokenName)
+otherToken5 = ("7a922050dc48ec0914a3e1c74aad5056de536e7f7cef71f1581a294d","OtherToken5")
+
+otherToken6 :: (CurrencySymbol,TokenName)
+otherToken6 = ("7a922050dc48ec0914a3e1c74aad5056de536e7f7cef71f1581a294d","OtherToken6")
+
+otherToken7 :: (CurrencySymbol,TokenName)
+otherToken7 = ("7a922050dc48ec0914a3e1c74aad5056de536e7f7cef71f1581a294d","OtherToken7")
+
+otherToken8 :: (CurrencySymbol,TokenName)
+otherToken8 = ("7a922050dc48ec0914a3e1c74aad5056de536e7f7cef71f1581a294d","OtherToken8")
+
 marketBeaconPolicyADA :: MintingPolicy
 marketBeaconPolicyADA = marketBeaconPolicy adaSymbol
 
@@ -130,38 +188,50 @@ marketBeaconPolicy1 = marketBeaconPolicy "c0f8644a01a6bf5db02f4afe30d604975e63dd
 marketBeaconPolicySym1 :: CurrencySymbol
 marketBeaconPolicySym1 = UScripts.scriptCurrencySymbol marketBeaconPolicy1
 
-alwaysSucceedPolicySym :: CurrencySymbol
-alwaysSucceedPolicySym = UScripts.scriptCurrencySymbol alwaysSucceedPolicy
-
 emConfig :: EmulatorConfig
 emConfig = EmulatorConfig (Left $ Map.fromList wallets) def
   where
     user1 :: Value
     user1 = lovelaceValueOf 1_000_000_000
          <> (uncurry singleton testToken1) 1
+         <> (uncurry singleton otherToken1) 1
          <> (uncurry singleton testToken2) 1000
+         <> (uncurry singleton otherToken2) 1000
 
     user2 :: Value
     user2 = lovelaceValueOf 1_000_000_000
          <> (uncurry singleton testToken2) 1000
          <> (uncurry singleton testToken3) 1
+         <> (uncurry singleton otherToken2) 1000
+         <> (uncurry singleton otherToken3) 1
     
     user3 :: Value
     user3 = lovelaceValueOf 1_000_000_000
          <> (uncurry singleton testToken2) 1000
          <> (uncurry singleton testToken4) 1
+         <> (uncurry singleton otherToken2) 1000
+         <> (uncurry singleton otherToken4) 1
     
     user4 :: Value
     user4 = lovelaceValueOf 1_000_000_000
          <> (uncurry singleton testToken2) 1000
+         <> (uncurry singleton testToken5) 1
+         <> (uncurry singleton otherToken2) 1000
+         <> (uncurry singleton otherToken5) 1
     
     user5 :: Value
     user5 = lovelaceValueOf 1_000_000_000
          <> (uncurry singleton testToken2) 1000
+         <> (uncurry singleton testToken6) 1
+         <> (uncurry singleton otherToken2) 1000
+         <> (uncurry singleton otherToken6) 1
 
     user6 :: Value
     user6 = lovelaceValueOf 1_000_000_000
          <> (uncurry singleton testToken2) 1000
+         <> (uncurry singleton testToken7) 1
+         <> (uncurry singleton otherToken2) 1000
+         <> (uncurry singleton otherToken7) 1
   
     wallets :: [(Wallet,Value)]
     wallets = 
@@ -184,7 +254,7 @@ benchConfig = emConfig & params .~ params'
 
     protoParams :: ProtocolParameters
     protoParams = def{ protocolParamMaxTxExUnits = Just (ExecutionUnits {executionSteps = 10000000000
-                                                                        ,executionMemory = 2000000})
+                                                                        ,executionMemory = 11000000})
                     --  , protocolParamMaxTxSize = 12300
                      }
 
@@ -219,6 +289,52 @@ createSaleUTxO CreateSaleParams{..} = do
   ledgerTx <- submitTxConstraintsWith @Void lookups tx'
   void $ awaitTxConfirmed $ getCardanoTxId ledgerTx
   logInfo @String "Sale UTxO created"
+
+closeSaleUTxO :: CloseSaleParams -> Contract () TraceSchema Text ()
+closeSaleUTxO CloseSaleParams{..} = do
+  userPubKeyHash <- ownFirstPaymentPubKeyHash
+  assetsUtxos <- utxosAt closeSaleMarketAddress
+
+  let beaconPolicyHashes = map mintingPolicyHash closeSaleBeaconPolicies
+      beaconRedeemers = map toRedeemer closeSaleBeaconRedeemer
+
+      closeRedeemer = toRedeemer CloseSale
+
+      lPolicies = foldl' (\a b -> a <> plutusV2MintingPolicy b) 
+                         (plutusV2MintingPolicy alwaysSucceedPolicy)
+                         closeSaleBeaconPolicies
+      
+      lookups = lPolicies
+             <> plutusV2OtherScript closeSaleMarketVal
+             <> Constraints.unspentOutputs assetsUtxos
+      
+      tx' =
+        -- | Burn Beacons
+        (mconcat $ zipWith3 (\x y z -> foldl' 
+          (\acc (t,i) -> acc <> mustMintCurrencyWithRedeemer y x t i) 
+          mempty
+          z)
+          beaconRedeemers
+          beaconPolicyHashes
+          closeSaleBeaconsBurned
+        )
+        -- | Must spend all utxos to be closed
+        <> foldl' (\a (d,v) -> 
+                      a <>
+                      mustSpendScriptOutputWithMatchingDatumAndValue 
+                        (UScripts.validatorHash closeSaleMarketVal) 
+                        (== toDatum d)
+                        (==v) 
+                        closeRedeemer
+                  ) 
+                  mempty 
+                  closeSaleSpecificUTxOs
+        -- | Must be signed by address staking pubkey
+        <> mustBeSignedBy userPubKeyHash
+  
+  ledgerTx <- submitTxConstraintsWith @Void lookups tx'
+  void $ awaitTxConfirmed $ getCardanoTxId ledgerTx
+  logInfo @String "Closed Sale UTxO(s)"
 
 purchase :: PurchaseParams -> Contract () TraceSchema Text ()
 purchase PurchaseParams{..} = do
@@ -274,6 +390,63 @@ purchase PurchaseParams{..} = do
   void $ awaitTxConfirmed $ getCardanoTxId ledgerTx
   logInfo @String "Purchased NFT(s)"
 
+update :: UpdateParams -> Contract () TraceSchema Text ()
+update UpdateParams{..} = do
+  userPubKeyHash <- ownFirstPaymentPubKeyHash
+  saleUTxOs <- Map.unions <$> mapM utxosAt updateAddresses
+
+  let beaconPolicyHashes = map mintingPolicyHash updateBeaconPolicies
+      beaconRedeemers = map toRedeemer updateBeaconRedeemer
+
+      toDatum' = TxOutDatumInline . toDatum
+
+      updateRedeemer = toRedeemer UpdateSale
+
+      lPolicies = foldl' (\a b -> a <> plutusV2MintingPolicy b) 
+                         (plutusV2MintingPolicy alwaysSucceedPolicy)
+                         updateBeaconPolicies
+
+      lookups = Constraints.unspentOutputs saleUTxOs
+             <> plutusV2OtherScript updateVal
+             <> lPolicies
+
+      tx' =
+        -- | Mint/Burn Beacons
+        (mconcat $ zipWith3 (\x y z -> foldl' 
+          (\acc (t,i) -> acc <> mustMintCurrencyWithRedeemer y x t i) 
+          mempty
+          z)
+          beaconRedeemers
+          beaconPolicyHashes
+          updateBeaconsMinted
+        )
+        -- | Must spend all utxos to be updated
+        <> ( mconcat $ map (foldl' (\a (d,v) -> 
+                      a <>
+                      mustSpendScriptOutputWithMatchingDatumAndValue 
+                        (UScripts.validatorHash updateVal) 
+                        (== toDatum d)
+                        (==v) 
+                        updateRedeemer
+                  ) 
+                  mempty)
+                  updateSpecificUTxOs
+           )
+        -- | Make change output.
+        <> (mconcat $ zipWith (\z b -> foldl'
+              (\acc (d,v) -> acc <> mustPayToAddressWith z (fmap toDatum' d) v)
+              mempty
+              b)
+              updatePaymentAddresses
+              updatePaymentOutputs
+           )
+        -- | Must be signed by address staking pubkey
+        <> mustBeSignedBy userPubKeyHash
+  
+  ledgerTx <- submitTxConstraintsWith @Void lookups tx'
+  void $ awaitTxConfirmed $ getCardanoTxId ledgerTx
+  logInfo @String "Updated Sale UTxO"
+
 -------------------------------------------------
 -- Endpoints
 -------------------------------------------------
@@ -281,8 +454,12 @@ endpoints :: Contract () TraceSchema Text ()
 endpoints = selectList choices >> endpoints
   where
     createSaleUTxO' = endpoint @"create-sale" createSaleUTxO
+    closeSaleUTxO' = endpoint @"close-sale" closeSaleUTxO
     purchase' = endpoint @"purchase" purchase
+    update' = endpoint @"update" update
     choices = 
       [ createSaleUTxO'
+      , closeSaleUTxO'
       , purchase'
+      , update'
       ]

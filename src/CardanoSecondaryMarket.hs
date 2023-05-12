@@ -203,7 +203,7 @@ mkMarketValidator marketDatum r ctx@ScriptContext{scriptContextTxInfo=info} =
   case r of
     CloseSale ->
       -- | All 'Sale' beacons in tx inputs must be burned.
-      traceIfFalse "Sale beacons not burned."
+      traceIfFalse "Sale beacon(s) not burned."
         ( valueOf totalInputValue (beaconSymbol marketDatum) (TokenName "Sale") == 
             Num.negate (valueOf minted (beaconSymbol marketDatum) (TokenName "Sale"))
         ) &&
@@ -218,7 +218,7 @@ mkMarketValidator marketDatum r ctx@ScriptContext{scriptContextTxInfo=info} =
       traceIfFalse "This input does not have a Sale beacon"
         (valueOf inputValue (beaconSymbol marketDatum) (TokenName "Sale") == 1) &&
       -- | No 'Sale' beacons can be minted this tx.
-      traceIfFalse "No Sale beacons can be minted this tx"
+      traceIfFalse "No Sale beacons can be minted/burned this tx"
         (valueOf minted (beaconSymbol marketDatum) (TokenName "Sale") == 0) &&
       -- | The following function checks:
       -- 1) The 'Sale' beacon must be re-output to this address.
@@ -360,11 +360,11 @@ mkMarketBeaconPolicy nftSym appName valHash r ctx@ScriptContext{scriptContextTxI
     mintCheck :: Bool
     mintCheck = case r of
       MintSaleBeacon ->
-        traceIfFalse "This redeemer only allows minting a single Sale beacon" $
+        traceIfFalse "This redeemer only allows minting a single 'Sale' token" $
           beaconMint == singleton beaconSym (TokenName "Sale") 1
       MintReceiptTokens ->
         let (_,_,!v) = saleInputs
-        in traceIfFalse "This redeemer only allows burning Sale beacons and minting receipt tokens" $
+        in traceIfFalse "Wrong tokens mint/burned with this redeemer" $
           beaconMint == v
       BurnBeacons ->
         traceIfFalse "Beacons can only be burned with this redeemer" 
