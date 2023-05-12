@@ -37,7 +37,7 @@ import Ledger.Ada (lovelaceValueOf)
 import Plutus.Script.Utils.V2.Scripts as UScripts
 import Plutus.Trace
 import Wallet.Emulator.Wallet
-import Data.List (foldl',repeat)
+import Data.List (foldl',repeat,zipWith3)
 import Prelude as Haskell (Semigroup (..), String)
 import Cardano.Api.Shelley (ExecutionUnits (..),ProtocolParameters (..))
 import Ledger.Tx.Internal as I
@@ -90,7 +90,7 @@ data CreateSaleParams = CreateSaleParams
 
 data PurchaseParams = PurchaseParams
   { purchaseBeaconsMinted :: [[(TokenName,Integer)]]
-  , purchaseBeaconRedeemer :: MarketBeaconRedeemer
+  , purchaseBeaconRedeemer :: [MarketBeaconRedeemer]
   , purchaseBeaconPolicies :: [MintingPolicy]
   , purchaseVal :: Validator
   , purchaseAddresses :: [Address]
@@ -225,7 +225,7 @@ purchase PurchaseParams{..} = do
   saleUTxOs <- Map.unions <$> mapM utxosAt purchaseAddresses
 
   let beaconPolicyHashes = map mintingPolicyHash purchaseBeaconPolicies
-      beaconRedeemer = toRedeemer purchaseBeaconRedeemer
+      beaconRedeemers = map toRedeemer purchaseBeaconRedeemer
 
       toDatum' = TxOutDatumInline . toDatum
 
@@ -241,10 +241,11 @@ purchase PurchaseParams{..} = do
 
       tx' =
         -- | Mint/Burn Beacons
-        (mconcat $ zipWith (\z b -> foldl' 
-          (\acc (t,i) -> acc <> mustMintCurrencyWithRedeemer z beaconRedeemer t i) 
+        (mconcat $ zipWith3 (\x y z -> foldl' 
+          (\acc (t,i) -> acc <> mustMintCurrencyWithRedeemer y x t i) 
           mempty
-          b)
+          z)
+          beaconRedeemers
           beaconPolicyHashes
           purchaseBeaconsMinted
         )
