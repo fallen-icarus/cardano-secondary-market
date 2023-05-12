@@ -416,11 +416,18 @@ mkMarketBeaconPolicy nftSym appName valHash r ctx@ScriptContext{scriptContextTxI
             case Map.lookup oAddr sMap of
               Nothing -> acc
               Just (receiptId,(curr,i)) ->
-                if valueOf oVal adaSymbol adaToken == 3_000_000 &&
-                   valueOf oVal sym receiptId == 1 &&
-                   uncurry (valueOf oVal) curr == i 
-                then acc + 1
-                else acc
+                if curr == (adaSymbol,adaToken) then
+                  if valueOf oVal adaSymbol adaToken == 3_000_000 + i &&
+                    valueOf oVal sym receiptId == 1
+                  then acc + 1
+                  else acc
+                else
+                  if valueOf oVal adaSymbol adaToken == 3_000_000 &&
+                      valueOf oVal sym receiptId == 1 &&
+                      uncurry (valueOf oVal) curr == i 
+                  then acc + 1
+                  else acc
+                  
       in if mapSize == 0 then
           traceError "No Sale inputs found"
          else if foldl' (foo beaconSym saleMap) 0 outputs /= mapSize then 

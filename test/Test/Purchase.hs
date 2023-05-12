@@ -91,7 +91,7 @@ successfullyPurchaseSingleNFT = do
   callEndpoint @"purchase" h2 $
     PurchaseParams
       { purchaseBeaconsMinted = [[("Sale",-1),(receiptToken,1)]]
-      , purchaseBeaconRedeemer = [MintReceiptTokens]
+      , purchaseBeaconRedeemer = MintReceiptTokens
       , purchaseBeaconPolicies = [marketBeaconPolicy1]
       , purchaseVal = marketValidator
       , purchaseAddresses = [marketAddr]
@@ -124,4 +124,4 @@ tests = do
     ]
 
 testTrace :: IO ()
-testTrace = runEmulatorTraceIO' def emConfig successfullyPurchaseSingleNFT
+testTrace = runEmulatorTraceIO' def benchConfig successfullyPurchaseSingleNFT

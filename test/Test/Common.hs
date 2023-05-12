@@ -90,7 +90,7 @@ data CreateSaleParams = CreateSaleParams
 
 data PurchaseParams = PurchaseParams
   { purchaseBeaconsMinted :: [[(TokenName,Integer)]]
-  , purchaseBeaconRedeemer :: [MarketBeaconRedeemer]
+  , purchaseBeaconRedeemer :: MarketBeaconRedeemer
   , purchaseBeaconPolicies :: [MintingPolicy]
   , purchaseVal :: Validator
   , purchaseAddresses :: [Address]
@@ -129,6 +129,9 @@ marketBeaconPolicy1 = marketBeaconPolicy "c0f8644a01a6bf5db02f4afe30d604975e63dd
 
 marketBeaconPolicySym1 :: CurrencySymbol
 marketBeaconPolicySym1 = UScripts.scriptCurrencySymbol marketBeaconPolicy1
+
+alwaysSucceedPolicySym :: CurrencySymbol
+alwaysSucceedPolicySym = UScripts.scriptCurrencySymbol alwaysSucceedPolicy
 
 emConfig :: EmulatorConfig
 emConfig = EmulatorConfig (Left $ Map.fromList wallets) def
@@ -169,6 +172,21 @@ emConfig = EmulatorConfig (Left $ Map.fromList wallets) def
       , (knownWallet 5, user5)
       , (knownWallet 6, user6)
       ]
+
+benchConfig :: EmulatorConfig
+benchConfig = emConfig & params .~ params'
+  where 
+    params' :: Params
+    params' = def{emulatorPParams = pParams'}
+
+    pParams' :: PParams
+    pParams' = pParamsFromProtocolParams protoParams
+
+    protoParams :: ProtocolParameters
+    protoParams = def{ protocolParamMaxTxExUnits = Just (ExecutionUnits {executionSteps = 10000000000
+                                                                        ,executionMemory = 2000000})
+                    --  , protocolParamMaxTxSize = 12300
+                     }
 
 -------------------------------------------------
 -- Trace Models
