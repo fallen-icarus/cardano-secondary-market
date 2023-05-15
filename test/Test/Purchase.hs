@@ -1567,4 +1567,4 @@ tests = do
     ]
 
 testTrace :: IO ()
-testTrace = runEmulatorTraceIO' def benchConfig mintOtherTokens
+testTrace = runEmulatorTraceIO' def benchConfig successfullyPurchaseMultipleNFTsUnderSamePolicy
