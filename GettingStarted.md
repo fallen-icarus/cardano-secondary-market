@@ -108,7 +108,7 @@ cardano-secondary-market convert-address \
   --staking-pubkey-hash 623a2b9a369454b382c131d7e3d12c4f93024022e5c5668cf0c5c25c \
   --stdout
 ```
-If the address does not have a staking credential, those fields can be omitted.
+If the address does not have a staking credential, those fields can be omitted. **All Bech32 addresses generated with this command will be for the Preproduction testnet.**
 
 #### Bech32 to Hashes
 ```
@@ -129,3 +129,112 @@ This will result in the following output when piped to `jq`:
 ```
 
 The `network_tag` of 0 corresponds to the Preproduction testnet (1 would be Mainnet). This address uses a spending pubkey and has no staking credential.
+
+---
+## Calculate Credential Hashes
+These commands can also save to a variable by omitting the `--out-file` field.
+
+#### Calculate the hash of a payment pubkey
+```
+cardano-cli address key-hash \
+  --payment-verification-key-file ownerPayment.vkey \
+  --out-file ownerPayment.pkh
+```
+
+#### Calculate the hash of a staking pubkey
+```
+cardano-cli stake-address key-hash \
+  --stake-verification-key-file ownerStake.vkey \
+  --out-file ownerStake.pkh
+```
+
+#### Calculate the hash of a script (payment, minting, or staking)
+```
+cardano-cli transaction policyid \
+  --script-file script.plutus \
+  --out-file script.h
+```
+
+---
+## Create a new Sale
+This example uses a pubkey for the owner's staking credential.
+
+#### Export the scripts
+```
+cardano-secondary-market export-script market-script \
+  --out-file marketplace.plutus
+
+cardano-secondary-market export-script beacon-policy \
+  --nft-policy-id c0f8644a01a6bf5db02f4afe30d604975e63dd274f1098a1738e561d \
+  --out-file beacons.plutus
+```
+The beacon policy required is dependent on the policy id of the NFT being sold. Make sure you use the correct policy id. The transaction will fail if the wrong beacon policy is used.
+
+#### Create the owner's marketplace address
+```
+cardano-cli address build \
+  --payment-script-file marketplace.plutus \
+  --stake-verification-key-file ownerStake.vkey \
+  --testnet-magic 1 \
+  --out-file market.addr
+```
+
+#### Calculate the beacon policy id
+```
+beaconPolicyId=$(cardano-cli transaction policyid \
+  --script-file beacons.plutus)
+```
+
+#### Create the minting redeemer
+```
+cardano-secondary-market beacon-redeemer \
+  --mint-sale \
+  --out-file mintSale.json
+```
+
+#### Create the Sale datum
+You will need the hashes of the owner's payToAddress.
+```
+cardano-secondary-market market-datum \
+  --beacon-policy-id $beaconPolicyId \
+  --nft-policy-id c0f8644a01a6bf5db02f4afe30d604975e63dd274f1098a1738e561d \
+  --nft-token-name 4f74686572546f6b656e0a \
+  --desired-asset-is-lovelace \
+  --desired-amount 10000000 \
+  --payment-pubkey-hash "$(cat ownerPayment.pkh) \
+  --staking-pubkey-hash "$(cat ownerStake.pkh) \
+  --out-file saleTerms.json
+```
+This datum says the NFT is on sale for 10 ADA.
+
+#### Create and submit the transaction
+```
+saleBeacon="${beaconPolicyId}.53616c65"
+
+cardano-cli query protocol-parameters \
+  --testnet-magic 1 \
+  --out-file protocol.json
+
+cardano-cli transaction build \
+  --tx-in <utxo_with_nft_and_fee> \
+  --tx-out "$(cat market.addr) + 3000000 lovelace + 1 c0f8644a01a6bf5db02f4afe30d604975e63dd274f1098a1738e561d.4f74686572546f6b656e0a + 1 ${saleBeacon}" \
+  --tx-out-inline-datum-file saleTerms.json \
+  --mint "1 ${saleBeacon}" \
+  --mint-script-file beacons.plutus \
+  --mint-redeemer-file mintSale.json \
+  --change-address "$(cat owner.addr)" \
+  --tx-in-collateral <collateral_utxo> \
+  --testnet-magic 1 \
+  --protocol-params-file protocol.json \
+  --out-file tx.body
+
+cardano-cli transaction sign \
+  --tx-body-file tx.body \
+  --signing-key-file ownerPayment.skey \
+  --testnet-magic 1 \
+  --out-file tx.signed
+
+cardano-cli transaction submit \
+  --testnet-magic 1 \
+  --tx-file tx.signed
+```
