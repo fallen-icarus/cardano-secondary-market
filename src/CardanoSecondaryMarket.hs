@@ -22,9 +22,20 @@ module CardanoSecondaryMarket
   MarketBeaconRedeemer(..),
   CurrencySymbol(..),
   TokenName(..),
+  Credential(..),
+  StakingCredential(..),
+  Address(..),
   adaSymbol,
   adaToken,
   txIdAsToken,
+
+  readCurrencySymbol,
+  readTokenName,
+  readPubKeyHash,
+  readValidatorHash,
+  getValidatorHash,
+  getPubKeyHash,
+  unsafeFromRight,
 
   marketValidator,
   marketValidatorHash,
@@ -33,10 +44,14 @@ module CardanoSecondaryMarket
   marketBeaconPolicy,
   marketBeaconPolicyScript,
   marketBeaconPolicySymbol,
+
+  writeScript,
+  writeData,
+  decodeDatum
 )
 where
 
-import Data.Aeson hiding (Value,Market)
+import Data.Aeson hiding (Value)
 import qualified Data.Aeson as Aeson
 import Codec.Serialise (serialise)
 import qualified Data.ByteString.Lazy  as LBS
@@ -530,6 +545,36 @@ decodeDatum = unsafeFromRight . fmap (PlutusTx.fromBuiltinData . fromCardanoScri
 -------------------------------------------------
 -- Off-Chain Helper Functions and Types
 -------------------------------------------------
+-- | Parse Currency from user supplied String
+readCurrencySymbol :: Haskell.String -> Either Haskell.String CurrencySymbol
+readCurrencySymbol s = case fromHex $ fromString s of
+  Right (LedgerBytes bytes') -> Right $ CurrencySymbol bytes'
+  Left msg                   -> Left $ "could not convert: " <> msg
+
+-- | Parse TokenName from user supplied String
+readTokenName :: Haskell.String -> Either Haskell.String TokenName
+readTokenName s = case fromHex $ fromString s of
+  Right (LedgerBytes bytes') -> Right $ TokenName bytes'
+  Left msg                   -> Left $ "could not convert: " <> msg
+
+-- | Parse PubKeyHash from user supplied String
+readPubKeyHash :: Haskell.String -> Either Haskell.String PubKeyHash
+readPubKeyHash s = case fromHex $ fromString s of
+  Right (LedgerBytes bytes') -> Right $ PubKeyHash bytes'
+  Left msg                   -> Left $ "could not convert: " <> msg
+
+-- | Parse ValidatorHash from user supplied String
+readValidatorHash :: Haskell.String -> Either Haskell.String ValidatorHash
+readValidatorHash s = case fromHex $ fromString s of
+  Right (LedgerBytes bytes') -> Right $ ValidatorHash bytes'
+  Left msg                   -> Left $ "could not convert: " <> msg
+
+getValidatorHash :: ValidatorHash -> B.ByteString
+getValidatorHash (ValidatorHash (BuiltinByteString vh)) = vh
+
+getPubKeyHash :: PubKeyHash -> B.ByteString
+getPubKeyHash pkh = (\(BuiltinByteString z) -> z) $ Api.getPubKeyHash pkh
+
 unsafeFromRight :: Either a b -> b
 unsafeFromRight (Right x) = x
 unsafeFromRight _ = Haskell.error "unsafeFromRight used on Left"
