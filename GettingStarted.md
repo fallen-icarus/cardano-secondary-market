@@ -56,7 +56,7 @@ git clone https://github.com/fallen-icarus/cardano-secondary-market
 git clone https://github.com/input-output-hk/plutus-apps
 cd plutus-apps
 git checkout 68c3721
-nix develop
+nix develop # This step can take a few hours even with the caches configured
 ```
 The last command should drop you into a nix terminal. Execute the following within the nix terminal.
 ```
