@@ -298,7 +298,7 @@ mkMarketValidator marketDatum r ctx@ScriptContext{scriptContextTxInfo=info} =
                 validMarketDatum (parseMarketDatum d) && 
                 traceIfFalse "Sale beacon stored with wrong value"
                   ( oVal == lovelaceValueOf 3_000_000 
-                         <> (uncurry singleton nft) 1 
+                         <> uncurry singleton nft 1 
                          <> singleton sym (TokenName "Sale") 1
                   ) 
               else traceError "Sale beacon not stored at proper dApp address"
@@ -477,7 +477,7 @@ mkMarketBeaconPolicy nftSym appName valHash r ctx@ScriptContext{scriptContextTxI
     utxoHasProperValue :: Value -> MarketDatum -> Bool
     utxoHasProperValue oVal MarketDatum{..} =
       if oVal == lovelaceValueOf 3_000_000
-              <> (uncurry singleton nftOnSale) 1
+              <> uncurry singleton nftOnSale 1
               <> singleton beaconSym (TokenName "Sale") 1
       then True
       else traceError "Sale UTxO not stored with proper value"
