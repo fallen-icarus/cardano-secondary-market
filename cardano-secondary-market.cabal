@@ -75,8 +75,8 @@ executable cardano-secondary-market
         CLI.Types
       , CLI.Parsers
       , CLI.Run
-      -- , CLI.BlockfrostApi
-      -- , CLI.Query
+      , CLI.BlockfrostApi
+      , CLI.Query
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:

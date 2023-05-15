@@ -26,6 +26,8 @@ parseCommand = hsubparser $ mconcat
       (info pCreateBeaconRedeemer $ progDesc "Create a beacon redeemer.")
   , command "convert-address"
       (info pConvertAddress $ progDesc "Convert plutus address <--> Bech32 address.")
+  , command "query"
+      (info parseQueryBeacons $ progDesc "Query the dApp's beacons.")
   ]
 
 -------------------------------------------------
@@ -128,6 +130,26 @@ pConvertAddress =
 
     pPlutus :: Parser ConvertAddress
     pPlutus = Plutus <$> pAddress
+
+-------------------------------------------------
+-- QueryBeacons Parser
+-------------------------------------------------
+parseQueryBeacons :: Parser Command
+parseQueryBeacons = fmap QueryBeacons . hsubparser $ mconcat
+    [ command "all-sales"
+        (info pAllSales $ progDesc "Query all sales for a certain policy id.")
+    , command "own-sales"
+        (info pOwnSales $ progDesc "Query all own Sales for a given policy id.")
+    ]
+  where
+    pAllSales :: Parser Query
+    pAllSales = QueryAllSales <$> pApiKey <*> pBeaconPolicy <*> pOutput
+
+    pOwnSales :: Parser Query
+    pOwnSales = QueryOwnSales <$> pApiKey <*> pBeaconPolicy <*> pMarketAddr <*> pOutput
+
+    pMarketAddr :: Parser MarketAddress
+    pMarketAddr = MarketAddress <$> pBech32Address
 
 -------------------------------------------------
 -- Basic Helper Parsers

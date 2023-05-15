@@ -37,6 +37,12 @@ module CardanoSecondaryMarket
   getPubKeyHash,
   unsafeFromRight,
 
+  toAsset,
+  toStakePubKeyHash,
+  toStakeValidatorHash,
+  toValidatorHash,
+  toPubKeyHash,
+
   marketValidator,
   marketValidatorHash,
   marketValidatorScript,
@@ -578,3 +584,22 @@ getPubKeyHash pkh = (\(BuiltinByteString z) -> z) $ Api.getPubKeyHash pkh
 unsafeFromRight :: Either a b -> b
 unsafeFromRight (Right x) = x
 unsafeFromRight _ = Haskell.error "unsafeFromRight used on Left"
+
+-------------------------------------------------
+-- ToJSON Helper Functions
+-------------------------------------------------
+toEncodedText :: TokenName -> Text
+toEncodedText (TokenName (BuiltinByteString tn)) = encodeByteString tn
+
+toAsset :: (CurrencySymbol,TokenName) -> Text
+toAsset (currSym,tokName)
+  | currSym == adaSymbol = "lovelace"
+  | otherwise = pack (Haskell.show currSym) Haskell.<> "." Haskell.<> toEncodedText tokName
+
+toStakePubKeyHash :: Address -> Maybe PubKeyHash
+toStakePubKeyHash (Address _ (Just (StakingHash (PubKeyCredential pkh)))) = Just pkh
+toStakePubKeyHash _ = Nothing
+
+toStakeValidatorHash :: Address -> Maybe ValidatorHash
+toStakeValidatorHash (Address _ (Just (StakingHash (ScriptCredential vh)))) = Just vh
+toStakeValidatorHash _ = Nothing

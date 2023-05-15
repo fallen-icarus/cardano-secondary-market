@@ -15,7 +15,7 @@ import Data.Text.Encoding as TE
 import qualified Codec.Binary.Encoding as E
 
 import CLI.Types
--- import CLI.Query
+import CLI.Query
 import CardanoSecondaryMarket
 import Cardano.Address.Style.Shelley hiding (unsafeFromRight)
 import Cardano.Address (fromBech32,unNetworkTag,bech32)
@@ -28,7 +28,7 @@ runCommand cmd = case cmd of
   CreateMarketRedeemer r file -> writeData file r
   CreateBeaconRedeemer r file -> writeData file r
   ConvertAddress convert output -> runAddressConversion convert output
-  -- QueryBeacons query -> runQuery query
+  QueryBeacons query -> runQuery query
 
 runExportScriptCmd :: Script -> FilePath -> IO ()
 runExportScriptCmd script file = do
@@ -43,6 +43,13 @@ runExportScriptCmd script file = do
 runAddressConversion :: ConvertAddress -> Output -> IO ()
 runAddressConversion (Plutus addr) output = generateBech32Address addr output
 runAddressConversion (Bech32 addr) output = extractAddressInfo addr output
+
+runQuery :: Query -> IO ()
+runQuery query = case query of
+  QueryAllSales apiKey policyId output -> 
+    runQueryAllSales apiKey policyId >>= toOutput output
+  QueryOwnSales apiKey policyId addr output ->
+    runQueryOwnSales apiKey policyId addr >>= toOutput output
 
 -------------------------------------------------
 -- Helper Functions
