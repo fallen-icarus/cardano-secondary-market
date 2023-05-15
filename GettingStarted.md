@@ -570,12 +570,14 @@ cardano-cli transaction submit \
   --tx-file tx.signed
 ```
 
-You are able to buy multiple NFTs in one transaction. If you do, make sure to properly match the receiptToken with the required payment. The transaction will fail if the payment outputs are not exactly what the script expects. The payment output should always be:
+You are able to buy multiple NFTs in one transaction. If you do, make sure to properly match the receiptToken with the required payment; the policy id of the receipt tokens must match their corresponding Sale beacon. The transaction will fail if the payment outputs are not exactly what the script expects. The payment output should always be:
 ```
-3 ADA + purchase amount + 1 receipt token with the proper token name
+3 ADA + purchase amount + 1 receipt token with the proper policy id and token name
 ```
 
 The 3 ADA is the seller's minimum UTxO deposit that you are returning to them.
+
+It is possible to buy multiple NFTs in one transaction even if those NFTs do not share a policy id. You must use all required beacon policies if you create a transaction like this.
 
 ---
 ## Burning receipt tokens
