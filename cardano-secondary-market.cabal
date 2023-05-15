@@ -14,17 +14,23 @@ common lang
   default-language: Haskell2010
   ghc-options: -Wall -Wredundant-constraints
 
-library
-  import: lang
-  exposed-modules: CardanoSecondaryMarket
+common plutus-internals
   build-depends:
+    cardano-api,
     plutus-ledger,
     plutus-ledger-api,
-    plutus-core,
-    plutus-tx-plugin,
     plutus-tx,
+    plutus-tx-plugin,
     plutus-script-utils,
-    cardano-api,
+    plutus-core
+    
+
+library
+  import: 
+    lang,
+    plutus-internals
+  exposed-modules: CardanoSecondaryMarket
+  build-depends:
     bytestring,
     serialise,
     aeson,
@@ -38,7 +44,9 @@ library
     -fno-specialise
 
 test-suite cardano-options-tests
-  import: lang
+  import: 
+    lang,
+    plutus-internals
   type: exitcode-stdio-1.0
   main-is: Test.hs
   hs-source-dirs: test
@@ -48,23 +56,16 @@ test-suite cardano-options-tests
   other-modules:
   build-depends:
     cardano-secondary-market,
-    cardano-api,
     plutus-contract,
-    plutus-tx,
-    plutus-ledger-api,
-    plutus-ledger,
-    plutus-tx-plugin,
     plutus-tx-constraints,
     cardano-node-emulator,
     aeson,
-    plutus-script-utils,
     text,
     containers,
     data-default,
     tasty,
     lens,
     tasty-hunit,
-    plutus-core
 
 executable cardano-secondary-market
     main-is:          Main.hs
