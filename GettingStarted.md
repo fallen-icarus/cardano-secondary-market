@@ -58,7 +58,7 @@ cd plutus-apps
 git checkout 68c3721
 nix develop # This step can take a few hours even with the caches configured
 ```
-The last command should drop you into a nix terminal. Execute the following within the nix terminal.
+The last command should drop you into a nix terminal once it is finished running. Execute the following within the nix terminal.
 ```
 cd ../cardano-secondary-market
 cabal clean
@@ -96,3 +96,36 @@ export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
 --- 
 ## Minting test tokens
 An always succeeding minting policy as well as the required redeemer are included [here](scripts/mint-test-tokens/). In that directory is also the template bash script that uses them. These can be used to create as many native tokens as needed to test this lending dApp.
+
+---
+## Address Conversions
+Since plutus smart contracts do not use bech32 encoded addresses while cardano-cli does, addresses will need to be converted as necessary. To make this as painless as possible, `cardano-secondary-market` is capable of doing these conversions for you. It uses [`cardano-addresses`](https://github.com/input-output-hk/cardano-addresses) under the hood.
+
+#### Hashes to Bech32
+```
+cardano-secondary-market convert-address \
+  --payment-pubkey-hash ae0d001455a855e6c00f98fa9061028f5c00d297926383bc501be2d2 \
+  --staking-pubkey-hash 623a2b9a369454b382c131d7e3d12c4f93024022e5c5668cf0c5c25c \
+  --stdout
+```
+If the address does not have a staking credential, those fields can be omitted.
+
+#### Bech32 to Hashes
+```
+cardano-secondary-market convert-address \
+  --address addr_test1vrlfp27zjnjlsak5f7dnjkpl9ekeq5ezc3e4uw769y5rgtc4qvv2f \
+  --stdout
+```
+
+This will result in the following output when piped to `jq`:
+``` JSON
+{
+  "network_tag": 0,
+  "payment_pubkey_hash": "fe90abc294e5f876d44f9b39583f2e6d905322c4735e3bda2928342f",
+  "payment_script_hash": null,
+  "staking_pubkey_hash": null,
+  "staking_script_hash": null
+}
+```
+
+The `network_tag` of 0 corresponds to the Preproduction testnet (1 would be Mainnet). This address uses a spending pubkey and has no staking credential.
