@@ -58,17 +58,18 @@ import qualified PlutusTx
 import PlutusTx.Prelude
 import Ledger.Address
 import Plutus.Script.Utils.V2.Scripts as Scripts
-import Plutus.Script.Utils.V2.Typed.Scripts
+import Plutus.Script.Utils.Typed
+import Plutus.Script.Utils.V2.Typed.Scripts.Validators
 import Ledger.Bytes (fromHex)
 import qualified Plutonomy
-import Ledger.Value (valueOf,flattenValue)
+import Plutus.Script.Utils.Value (valueOf,flattenValue)
+import Plutus.Script.Utils.Ada (lovelaceValueOf)
 import PlutusTx.Numeric as Num
 import PlutusTx.Ratio as Ratio
 import PlutusPrelude (foldl')
 import qualified PlutusTx.AssocMap as Map
 import PlutusTx.Builtins.Internal (BuiltinByteString(..))
 import Plutus.V1.Ledger.Bytes (encodeByteString)
-import Ledger.Ada (lovelaceValueOf)
 
 -------------------------------------------------
 -- Data Types

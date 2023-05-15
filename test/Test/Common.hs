@@ -26,14 +26,15 @@ import Control.Monad (void)
 import Data.Aeson (FromJSON, ToJSON)
 import GHC.Generics (Generic)
 import Data.Text (Text)
-import Ledger hiding (singleton,mintingPolicyHash)
-import Ledger.Constraints as Constraints
-import qualified Ledger.Constraints.TxConstraints as Constraints
+import Ledger hiding (singleton,mintingPolicyHash,Value,lovelaceValueOf)
+import Ledger.Tx.Constraints as Constraints
+import Ledger.Tx.Constraints.TxConstraints hiding (singleton)
+import qualified Ledger.Tx.Constraints.TxConstraints as Constraints
 import Plutus.Contract
 import qualified PlutusTx
 import PlutusTx.Prelude hiding (Semigroup (..), foldMap)
-import Ledger.Value (singleton)
-import Ledger.Ada (lovelaceValueOf)
+import Plutus.Script.Utils.Value (singleton,Value)
+import Plutus.Script.Utils.Ada (lovelaceValueOf)
 import Plutus.Script.Utils.V2.Scripts as UScripts
 import Plutus.Trace
 import Wallet.Emulator.Wallet
@@ -42,18 +43,25 @@ import Prelude as Haskell (Semigroup (..), String)
 import Cardano.Api.Shelley (ExecutionUnits (..),ProtocolParameters (..))
 import Ledger.Tx.Internal as I
 import Plutus.Script.Utils.V2.Generators (alwaysSucceedPolicy)
+import Cardano.Node.Emulator.Params
+import qualified Cardano.Api as C
+import Cardano.Api hiding (TxOutDatum,TxOutDatumInline,TxOutDatumHash,Address,TxId,Value)
+import Ledger.Tx.CardanoAPI.Internal
 
 import CardanoSecondaryMarket
 
 -------------------------------------------------
 -- Helper Functions
 -------------------------------------------------
+unsafeFromRight :: Either a b -> b
+unsafeFromRight (Right b) = b
+
 txIdWithValue :: Value -> EmulatorTrace TxId
 txIdWithValue value' = do
   state <- chainState
   let xs = Map.toList $ getIndex (state ^. index)
       findTxId v ((TxOutRef txId' _,o):ys)
-        | I.txOutValue o == v = txId'
+        | fromCardanoValue (I.txOutValue o) == v = txId'
         | otherwise = findTxId v ys
   return $ findTxId value' xs
 
@@ -191,49 +199,49 @@ marketBeaconPolicySym1 = UScripts.scriptCurrencySymbol marketBeaconPolicy1
 emConfig :: EmulatorConfig
 emConfig = EmulatorConfig (Left $ Map.fromList wallets) def
   where
-    user1 :: Value
-    user1 = lovelaceValueOf 1_000_000_000
+    user1 :: C.Value
+    user1 = unsafeFromRight . toCardanoValue $ lovelaceValueOf 1_000_000_000
          <> (uncurry singleton testToken1) 1
          <> (uncurry singleton otherToken1) 1
          <> (uncurry singleton testToken2) 1000
          <> (uncurry singleton otherToken2) 1000
 
-    user2 :: Value
-    user2 = lovelaceValueOf 1_000_000_000
+    user2 :: C.Value
+    user2 = unsafeFromRight . toCardanoValue $ lovelaceValueOf 1_000_000_000
          <> (uncurry singleton testToken2) 1000
          <> (uncurry singleton testToken3) 1
          <> (uncurry singleton otherToken2) 1000
          <> (uncurry singleton otherToken3) 1
     
-    user3 :: Value
-    user3 = lovelaceValueOf 1_000_000_000
+    user3 :: C.Value
+    user3 = unsafeFromRight . toCardanoValue $ lovelaceValueOf 1_000_000_000
          <> (uncurry singleton testToken2) 1000
          <> (uncurry singleton testToken4) 1
          <> (uncurry singleton otherToken2) 1000
          <> (uncurry singleton otherToken4) 1
     
-    user4 :: Value
-    user4 = lovelaceValueOf 1_000_000_000
+    user4 :: C.Value
+    user4 = unsafeFromRight . toCardanoValue $ lovelaceValueOf 1_000_000_000
          <> (uncurry singleton testToken2) 1000
          <> (uncurry singleton testToken5) 1
          <> (uncurry singleton otherToken2) 1000
          <> (uncurry singleton otherToken5) 1
     
-    user5 :: Value
-    user5 = lovelaceValueOf 1_000_000_000
+    user5 :: C.Value
+    user5 = unsafeFromRight . toCardanoValue $ lovelaceValueOf 1_000_000_000
          <> (uncurry singleton testToken2) 1000
          <> (uncurry singleton testToken6) 1
          <> (uncurry singleton otherToken2) 1000
          <> (uncurry singleton otherToken6) 1
 
-    user6 :: Value
-    user6 = lovelaceValueOf 1_000_000_000
+    user6 :: C.Value
+    user6 = unsafeFromRight . toCardanoValue $ lovelaceValueOf 1_000_000_000
          <> (uncurry singleton testToken2) 1000
          <> (uncurry singleton testToken7) 1
          <> (uncurry singleton otherToken2) 1000
          <> (uncurry singleton otherToken7) 1
   
-    wallets :: [(Wallet,Value)]
+    wallets :: [(Wallet,C.Value)]
     wallets = 
       [ (knownWallet 1, user1)
       , (knownWallet 2, user2)
@@ -293,7 +301,7 @@ createSaleUTxO CreateSaleParams{..} = do
 closeSaleUTxO :: CloseSaleParams -> Contract () TraceSchema Text ()
 closeSaleUTxO CloseSaleParams{..} = do
   userPubKeyHash <- ownFirstPaymentPubKeyHash
-  assetsUtxos <- utxosAt closeSaleMarketAddress
+  assetsUtxos <- utxosAt $ unsafeFromRight $ toCardanoAddressInEra Mainnet closeSaleMarketAddress
 
   let beaconPolicyHashes = map mintingPolicyHash closeSaleBeaconPolicies
       beaconRedeemers = map toRedeemer closeSaleBeaconRedeemer
@@ -338,7 +346,7 @@ closeSaleUTxO CloseSaleParams{..} = do
 
 purchase :: PurchaseParams -> Contract () TraceSchema Text ()
 purchase PurchaseParams{..} = do
-  saleUTxOs <- Map.unions <$> mapM utxosAt purchaseAddresses
+  saleUTxOs <- Map.unions <$> mapM (utxosAt . unsafeFromRight . toCardanoAddressInEra Mainnet) purchaseAddresses
 
   let beaconPolicyHashes = map mintingPolicyHash purchaseBeaconPolicies
       beaconRedeemers = map toRedeemer purchaseBeaconRedeemer
@@ -393,7 +401,7 @@ purchase PurchaseParams{..} = do
 update :: UpdateParams -> Contract () TraceSchema Text ()
 update UpdateParams{..} = do
   userPubKeyHash <- ownFirstPaymentPubKeyHash
-  saleUTxOs <- Map.unions <$> mapM utxosAt updateAddresses
+  saleUTxOs <- Map.unions <$> mapM (utxosAt . unsafeFromRight . toCardanoAddressInEra Mainnet) updateAddresses
 
   let beaconPolicyHashes = map mintingPolicyHash updateBeaconPolicies
       beaconRedeemers = map toRedeemer updateBeaconRedeemer
