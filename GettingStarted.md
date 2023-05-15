@@ -238,3 +238,83 @@ cardano-cli transaction submit \
   --testnet-magic 1 \
   --tx-file tx.signed
 ```
+
+---
+## Update a Sale
+This allows the seller to change the terms of a sale. **All sales must be updated in separate transactions to guarantee that each sale will have a unique transaction hash.**
+
+The beacon policy is not executed but is usefull for getting the beacon policy id. If you already know the beacon policy id, the beacon policy steps (exporting and calculating the policy id) can be omitted.
+
+#### Export the scripts
+```
+cardano-secondary-market export-script market-script \
+  --out-file marketplace.plutus
+
+cardano-secondary-market export-script beacon-policy \
+  --nft-policy-id c0f8644a01a6bf5db02f4afe30d604975e63dd274f1098a1738e561d \
+  --out-file beacons.plutus
+```
+The beacon policy required is dependent on the policy id of the NFT being sold. Make sure you use the correct policy id. The transaction will fail if the wrong beacon policy is used.
+
+#### Calculate the beacon policy id
+```
+beaconPolicyId=$(cardano-cli transaction policyid \
+  --script-file beacons.plutus)
+```
+
+#### Create the new Sale datum
+```
+cardano-secondary-market market-datum \
+  --beacon-policy-id $beaconPolicyId \
+  --nft-policy-id c0f8644a01a6bf5db02f4afe30d604975e63dd274f1098a1738e561d \
+  --nft-token-name 4f74686572546f6b656e0a \
+  --desired-asset-is-lovelace \
+  --desired-amount 20000000 \
+  --payment-pubkey-hash "$(cat ownerPayment.pkh) \
+  --staking-pubkey-hash "$(cat ownerStake.pkh) \
+  --out-file saleTerms.json
+```
+
+The beacon policy id, and the nft policy id and token name must remain the same. However, the rest of the fields can be changed. The transaction will fail if the you change a field that should not be changed.
+
+#### Create the spending redeemer
+```
+cardano-secondary-market market-redeemer \
+  --update \
+  --out-file update.json
+```
+
+#### Create and submit the transaction
+```
+saleBeacon="${beaconPolicyId}.53616c65"
+
+cardano-cli query protocol-parameters \
+  --testnet-magic 1 \
+  --out-file protocol.json
+
+cardano-cli transaction build \
+  --tx-in <utxo_with_fee> \
+  --tx-in <sale_utxo> \
+  --tx-in-script-file marketplace.plutus \
+  --tx-in-inline-datum-present \
+  --tx-in-redeemer-file update.json \
+  --tx-out "$(cat market.addr) + 3000000 lovelace + 1 c0f8644a01a6bf5db02f4afe30d604975e63dd274f1098a1738e561d.4f74686572546f6b656e0a + 1 ${saleBeacon}" \
+  --tx-out-inline-datum-file saleTerms.json \
+  --required-signer-hash ownerStake.pkh \
+  --change-address "$(cat owner.addr)" \
+  --tx-in-collateral <collateral_utxo> \
+  --testnet-magic 1 \
+  --protocol-params-file protocol.json \
+  --out-file tx.body
+
+cardano-cli transaction sign \
+  --tx-body-file tx.body \
+  --signing-key-file ownerPayment.skey \
+  --signing-key-file ownerStake.skey \
+  --testnet-magic 1 \
+  --out-file tx.signed
+
+cardano-cli transaction submit \
+  --testnet-magic 1 \
+  --tx-file tx.signed
+```
