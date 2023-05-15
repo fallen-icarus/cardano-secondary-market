@@ -51,8 +51,13 @@ test-suite cardano-tests
   hs-source-dirs: test
   ghc-options:
     -threaded -rtsopts -with-rtsopts=-N
-    -Wno-unused-local-binds -Wno-unused-matches
+    -Wno-unused-local-binds -Wno-unused-matches -Wno-deprecations
   other-modules:
+      Test.CloseSale
+    , Test.Common
+    , Test.CreateSale
+    , Test.Purchase
+    , Test.UpdateSale
   build-depends:
     cardano-secondary-market,
     plutus-contract,

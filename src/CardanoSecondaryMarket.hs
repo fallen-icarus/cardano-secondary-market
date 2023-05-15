@@ -63,7 +63,7 @@ import Codec.Serialise (serialise)
 import qualified Data.ByteString.Lazy  as LBS
 import qualified Data.ByteString.Short as SBS
 import qualified Data.ByteString as B
-import Prelude (IO,FilePath,seq) 
+import Prelude (IO,FilePath) 
 import qualified Prelude as Haskell
 import Data.String (fromString)
 import Data.Text (Text,pack)
@@ -86,7 +86,6 @@ import qualified Plutonomy
 import Plutus.Script.Utils.Value (valueOf,flattenValue)
 import Plutus.Script.Utils.Ada (lovelaceValueOf)
 import PlutusTx.Numeric as Num
-import PlutusTx.Ratio as Ratio
 import PlutusPrelude (foldl')
 import qualified PlutusTx.AssocMap as Map
 import PlutusTx.Builtins.Internal (BuiltinByteString(..))

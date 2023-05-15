@@ -31,9 +31,6 @@ import Plutus.Script.Utils.Ada (lovelaceValueOf)
 import Data.Default
 import Plutus.V2.Ledger.Api
 import Ledger.Address
-import Plutus.Script.Utils.V2.Generators (alwaysSucceedValidatorHash,alwaysSucceedPolicy)
-import Cardano.Node.Emulator.TimeSlot
-import Plutus.Script.Utils.V2.Scripts (scriptCurrencySymbol)
 
 import Test.Common
 import CardanoSecondaryMarket

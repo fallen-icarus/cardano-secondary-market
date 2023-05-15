@@ -20,10 +20,9 @@ import Data.Proxy
 import Servant.Client
 import Control.Monad
 import qualified Data.Text as T
-import Data.List (find)
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Maybe (isJust,fromJust)
+import Data.Maybe (fromJust)
 
 import CLI.Types
 import CardanoSecondaryMarket

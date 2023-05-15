@@ -23,7 +23,6 @@ import Control.Lens hiding (from,index,to)
 import Data.Default
 import Data.Void (Void)
 import Control.Monad (void)
-import Data.Aeson (FromJSON, ToJSON)
 import GHC.Generics (Generic)
 import Data.Text (Text)
 import Ledger hiding (singleton,mintingPolicyHash,Value,lovelaceValueOf)
@@ -40,7 +39,7 @@ import Plutus.Trace
 import Wallet.Emulator.Wallet
 import Data.List (foldl',zipWith3)
 import Prelude as Haskell (Semigroup (..), String)
-import Cardano.Api.Shelley (ExecutionUnits (..),ProtocolParameters (..))
+import Cardano.Api.Shelley (ProtocolParameters (..))
 import Ledger.Tx.Internal as I
 import Plutus.Script.Utils.V2.Generators (alwaysSucceedPolicy)
 import Cardano.Node.Emulator.Params
@@ -53,9 +52,6 @@ import CardanoSecondaryMarket
 -------------------------------------------------
 -- Helper Functions
 -------------------------------------------------
-unsafeFromRight :: Either a b -> b
-unsafeFromRight (Right b) = b
-
 txIdWithValue :: Value -> EmulatorTrace TxId
 txIdWithValue value' = do
   state <- chainState
