@@ -35,8 +35,74 @@ If the beacon has not been minted before, this URL does not exist yet. Once the 
 ---
 ## Installing
 
+### Using Cabal - RECOMMENDED
+
+#### Install the necessary packages - similar to cardano-node
+```
+sudo apt update
+sudo apt upgrade
+sudo apt-get install autoconf automake build-essential curl g++ git jq libffi-dev libgmp-dev libncursesw5 libssl-dev libsystemd-dev libtinfo-dev libtool make pkg-config wget zlib1g-dev liblzma-dev libpq-dev
+```
+
+#### Install libsodium and scep256k1
+```
+git clone https://github.com/input-output-hk/libsodium
+cd libsodium
+git checkout dbb48cc
+./autogen.sh
+./configure
+make
+sudo make install
+
+cd ../
+git clone https://github.com/bitcoin-core/secp256k1
+cd secp256k1
+git checkout ac83be33
+./autogen.sh
+./configure --enable-module-schnorrsig --enable-experimental
+make
+make check
+sudo make install
+sudo ldconfig
+```
+
+Add the following lines to your `$HOME/.bashrc` file:
+```
+export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
+export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
+```
+
+#### Install GHC 8.10.7 and cabal
+```
+cd
+curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+```
+Make sure to install the required packages it mentions before hitting ENTER.
+Prepend or append the required PATH variable.
+You do not need to install the haskell-langauge-server.
+You do not need to install stack.
+Press ENTER to proceed.
+```
+source .bashrc
+ghcup install ghc 8.10.7
+ghcup set ghc 8.10.7
+```
+
+#### Build the executable
+```
+git clone https://github.com/fallen-icarus/cardano-secondary-market
+cd cardano-secondary-market
+cabal clean
+cabal update
+cabal build all
+```
+
+The `cardano-secondary-market` CLI program should now be at `dist-newstyle/build/x86_64-linux/ghc-8.10.7/cardano-secondary-market-0.1.0.0/x/cardano-secondary-market/build/cardano-secondary-market/cardano-secondary-market`. Move the program to somewhere in your `$PATH`.
+
+All `cardano-secondary-market` subcommands have an associated `--help` option. The functionality is meant to feel like `cardano-cli`.
+
 ### Using Nix
-The [Nix Package Manager](https://nixos.org/) can be installed on most Linux distributions by downloading and running the installation script:
+The [Nix Package Manager](https://nixos.org/) can be installed on most Linux distributions by downloading and running the installation script
 ```
 curl -L https://nixos.org/nix/install > install-nix.sh
 chmod +x install-nix.sh
@@ -45,7 +111,7 @@ chmod +x install-nix.sh
 and following the directions.
 
 #### Configuring the Binary Caches
-While this step is optional, it can save several hours of build time. Therefore, it is highly recommended that you do this.
+While this step is optional, it can save several hours of time since nix will need a copy of every necessary package. Therefore, it is highly recommended that you do this.
 ```
 sudo mkdir -p /etc/nix
 cat <<EOF | sudo tee -a /etc/nix/nix.conf
@@ -60,13 +126,13 @@ The caches used here come from the plutus-apps contributing [doc](https://github
 You will need to restart the nix service in order to make sure that it uses the newly configured caches. A sure fire way to do this is restart your machine.
 
 #### Building the Executable
-You do not need sudo for this step. It is advised that you execute these steps as a standard user.
 ```
 git clone https://github.com/fallen-icarus/cardano-secondary-market
 git clone https://github.com/input-output-hk/plutus-apps
 cd plutus-apps
 git checkout 68c3721
-nix develop # This step can take a few hours even with the caches configured
+nix develop # This step can take an hour even with the caches configured
+# Set accept-flake-config to true and permanently mark the value as trusted
 ```
 The last command should drop you into a nix terminal once it is finished running. Execute the following within the nix terminal.
 ```
@@ -82,12 +148,9 @@ You can now exit the nix terminal with `exit`.
 
 All `cardano-secondary-market` subcommands have an associated `--help` option. The functionality is meant to feel like `cardano-cli`.
 
-#### Troubleshooting
+#### Troubleshooting Nix
 If you encounter a libsodium error, you may need to first install libsodium separately. While not inside the nix terminal, execute the following:
 ```
-curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh # Install GHC and cabal
-ghcup install ghc 8.10.7
-ghcup set ghc 8.10.7
 git clone https://github.com/input-output-hk/libsodium
 cd libsodium
 git checkout dbb48cc
@@ -96,7 +159,6 @@ git checkout dbb48cc
 make
 sudo make install
 ```
-
 Once installed, you can retry the build after exporting the following variables while inside the nix terminal:
 ```
 export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
