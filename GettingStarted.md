@@ -155,6 +155,7 @@ All `cardano-secondary-market` subcommands have an associated `--help` option. T
 #### Troubleshooting Nix
 If you encounter a libsodium error, you may need to first install libsodium separately. While not inside the nix terminal, execute the following:
 ```
+cd # return to your home dir
 git clone https://github.com/input-output-hk/libsodium
 cd libsodium
 git checkout dbb48cc
@@ -165,8 +166,11 @@ sudo make install
 ```
 Once installed, you can retry the build after exporting the following variables while inside the nix terminal:
 ```
+cd ../plutus-apps
+nix develop # This should only take a minute this time
 export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
 export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
+cabal build all
 ```
 
 --- 
