@@ -78,9 +78,13 @@ cd
 curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
 ```
 Make sure to install the required packages it mentions before hitting ENTER.
+
 Prepend or append the required PATH variable.
+
 You do not need to install the haskell-langauge-server.
+
 You do not need to install stack.
+
 Press ENTER to proceed.
 ```
 source .bashrc
