@@ -153,9 +153,9 @@ You can now exit the nix terminal with `exit`.
 All `cardano-secondary-market` subcommands have an associated `--help` option. The functionality is meant to feel like `cardano-cli`.
 
 #### Troubleshooting Nix
-If you encounter a libsodium error, you may need to first install libsodium separately. While not inside the nix terminal, execute the following:
+If you encounter a libsodium error, you may need to first install libsodium separately. While not inside the nix terminal (you can leave with `exit`), execute the following:
 ```
-cd # return to your home dir
+cd # return to your home directory
 git clone https://github.com/input-output-hk/libsodium
 cd libsodium
 git checkout dbb48cc
