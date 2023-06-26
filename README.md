@@ -1,5 +1,5 @@
 # Cardano-Secondary-Market
-A p2p aftermarket protocol for trading NFTs on the Cardano Settlement Layer. Part of the [p2p-DeFi protocol family.]
+A [p2p-DeFi](https://github.com/zhekson1/CSL-DeFi-Protocols) aftermarket protocol for buying/selling NFTs on the Cardano Settlement Layer.
 
 ## Table of Contents
 - [Abstract](#abstract)
@@ -19,7 +19,7 @@ Secondary Markets (a.k.a. aftermarkets) play a crucial role in enhancing the eff
 ## Preliminary Discussion
 A robust NFT aftermarket is an essential cornerstone of a DeFi ecosystem. This is especially true for "Financial" NFTs, whose purpose is to control access to some underlying locked asset(s) (i.e. Option or Loan "Key" Tokens). A financial NFT's' value may be highly dependent on time, as in the case of options or lending/borrowing protocols. The viability of such protocols greatly depends on users' confidence that a secure aftermarket is *always* available for trading. Therefore, any DeFi protocol with time-dependent mechanics can only ever be as robust as the most robust aftermarket protocol. As a member of the [p2p-DeFi protocol family](https://github.com/zhekson1/CSL-DeFi-Protocols), Cardano-Secondary-Market provides the strongest availability and censorship-resistance guarantees of any aftermarket protocol. 
 
-Cardano-Secondary-Market is also a highly composable protocol. NFT buyers can use outputs from other (composable) protocols as payment inputs, and the resultant NFT outputs can be inputs to other (composable) protocols, all in a single transaction (limited by Cardano parameters for max Tx size). Composing DeFi protocols yields significant increases throughput and decreases in total Tx fees - an essential feature for eUTxO style ledgers. An example of a complex transaction involving Cardano-Secondary-Market, Cardano-Swaps, and Cardano-Options is shown in the [Features Discussion](#features-discussion) section below. 
+Cardano-Secondary-Market is also a highly composable protocol. NFT buyers can use outputs from other (composable) protocols as payment inputs, and the resultant NFT outputs can be inputs to other (composable) protocols, all in a single transaction (limited by Cardano parameters for max Tx size). Composing DeFi protocols yields significant increases in throughput and decreases in total Tx fees - essential for eUTxO style ledgers. An example of a complex transaction involving Cardano-Secondary-Market, Cardano-Swaps, and Cardano-Options is shown in the [Features Discussion](#features-discussion) section below. 
 
 
 ### Lock and Key NFTs
@@ -138,14 +138,14 @@ Minting a `Sale` beacon requires the `MintSaleBeacon` redeemer and all the follo
 4. The `Sale` beacon must go to an address using the marketplace validator as the payment credential.
 5. The `Sale` beacon must go to an address with a staking credential.
 6. The `Sale` beacon must be stored with the proper inline `MarketDatum`:
-        - `beaconSymbol` == this policy id
-        - the currency symbol for nftOnSale == currency symbol in `MarketConfig`
-        - `nftOnSale` == the NFT stored in the UTxO
-        - the salePrice > 0
-        - the `payToAddress` must use a payment pubkey
+      - `beaconSymbol` == this policy id
+      - the currency symbol for nftOnSale == currency symbol in `MarketConfig`
+      - `nftOnSale` == the NFT stored in the UTxO
+      - the salePrice > 0
+      - the `payToAddress` must use a payment pubkey
 7. The `Sale` beacon must be stored with the proper value:
-        - 3 ADA + nft for sale + `Sale` beacon
-        - no other assets
+      - 3 ADA + nft for sale + `Sale` beacon
+      - no other assets
 
 ##### Closing an open Sale
 Closing an open sale involves burning the `Sale` beacon and reclaiming the NFT. Only the marketplace address owner can use this redeemer. Multiple open sales can be closed in a single transaction.
@@ -167,19 +167,16 @@ It is possible to update an open sale in place. Only the address owner can do th
 3. No `Sale` beacons can be minted this transaction.
 4. The `Sale` beacon must be re-output to the same address.
 5. The output must have a valid inline `MarketDatum`:
-        -`beaconSymbol` must be the same as the input's datum
-        -`nftOnSale` must be the same as the input's datum
-        -`salePrice` must be > 0
-        -`payToAddress` must use a payment pubkey
-6. The output must have the proper value:
-        - 3 ADA + NFT for sale + `Sale` beacon
-        - no other assets
-7. The address' staking credential must signal approval (via key or script).
+	- `beaconSymbol` must be the same as the input's datum
+	- `nftOnSale` must be the same as the input's datum
+	- `salePrice` (new) must be > 0
+	- `payToAddress` (new) must use a payment pubkey
+1. The output must have the proper value:
+      - 3 ADA + NFT for sale + `Sale` beacon
+      - no other assets
+2. The address' staking credential must signal approval (via key or script).
 
 The first three requirements guarantee that each sale will have a unique transaction hash, which is required to compose purchases. The trade-off here is that only one sale can be updated per transaction.
-
-> **Note**
-> Future versions of the protocol will allow updating the `payToAddress` datum field, in addition to the `salePrice`
 
 #### 3. Purchasing an NFT
 Purchasing an NFT involves minting a `Receipt` Token, burning the `Sale` beacon, and sending the required payment to the `payToAddress` in the sale datum.
