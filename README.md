@@ -1,4 +1,7 @@
 # Cardano-Secondary-Market
+
+*This protocol has been renamed to Cardano-Aftermarket. Instead of renaming this repo, a new repo has been created and this repo has been archived. This was done to minimize the risk of repojacking. You can find the new repo [here](https://github.com/fallen-icarus/cardano-aftermarket).*
+
 A [p2p-DeFi](https://github.com/zhekson1/CSL-DeFi-Protocols) aftermarket protocol for buying/selling NFTs on the Cardano Settlement Layer.
 
 ## Table of Contents
